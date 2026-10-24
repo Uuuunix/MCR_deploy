@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mcr"
+version = "0.1.0"
+description = "MCR memory core and Agent Memory Leaderboard deployment adapter"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi>=0.115,<1",
+  "openai>=1.60,<3",
+  "pydantic>=2.10,<3",
+  "qdrant-client>=1.12,<2",
+  "uvicorn>=0.34,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-asyncio>=0.24,<2",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcr", "deployment"]
+
+[tool.pytest.ini_options]
+addopts = "-q --import-mode=importlib"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+

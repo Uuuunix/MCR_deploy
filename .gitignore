@@ -1,0 +1,50 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+dist/
+build/
+.idea/
+.vscode/
+
+# Keep local project notes out of the published source tree for now.
+/README.md
+/docs/
+/tests/
+
+# Local runtime state: SQLite databases, Qdrant data, uploads, and logs.
+.runtime/
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.log
+*.pid
+
+# Machine-specific settings and credentials.
+.env
+.env.*
+*.env
+*.env.example
+*.env.sample
+*.pem
+*.key
+credentials.json
+.secrets/
+.codex/
+.agents/
+.aws/
+.venv/
+venv/
+
+# Generated test and analysis artifacts.
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+

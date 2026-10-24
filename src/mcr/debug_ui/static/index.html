@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MCR · Memory Workbench</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">MCR / MEMORY LAB</p>
+        <h1>Memory Workbench</h1>
+      </div>
+      <div class="topbar-tools">
+        <div class="workspace-picker">
+          <label for="workspace-select">Workspace</label>
+          <select id="workspace-select"><option value="default">default</option></select>
+          <button class="secondary" id="workspace-create">+ 新建</button>
+        </div>
+        <div class="status" id="status"><span></span><strong>正在检查服务</strong></div>
+      </div>
+    </header>
+
+    <nav class="mode-nav" aria-label="工作区">
+      <button class="mode-button active" data-workspace="extraction">抽取与持久化</button>
+      <button class="mode-button" data-workspace="search">记忆查询</button>
+      <button class="mode-button" data-workspace="library">记忆库</button>
+      <button class="mode-button" data-workspace="sources">原始消息</button>
+      <button class="mode-button" data-workspace="summary">会话摘要</button>
+    </nav>
+
+    <main class="workspace" id="workspace-extraction">
+      <section class="panel input-panel">
+        <div class="panel-heading">
+          <span class="step">01</span>
+          <div><h2>提交当前消息</h2><p>MCR 自动维护 turn、摘要与最近 8 条上下文；候选只来自本次消息。</p></div>
+        </div>
+
+        <label>Session ID<input id="session-id" value="debug-session" /></label>
+        <div class="automation-note">消息 ID、turn、时间、摘要和最近上下文均由 MCR 自动生成或读取。历史图片会以原图重新发送给多模态模型。</div>
+
+        <article class="message-card user-card">
+          <div class="message-title"><span>USER</span><span class="auto-label">AUTO TURN</span></div>
+          <textarea id="user-text" rows="5" placeholder="例如：我昨天终于完成了毕业答辩，感觉轻松多了。"></textarea>
+          <label class="file-button">+ 添加图片<input id="user-images" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple /></label>
+          <div class="file-list" id="user-file-list"></div>
+        </article>
+
+        <article class="message-card assistant-card">
+          <div class="message-title"><span>ASSISTANT（可选）</span><span class="auto-label">AUTO TURN</span></div>
+          <textarea id="assistant-text" rows="4" placeholder="例如：恭喜！你的答辩是在 10 月 16 日完成的。"></textarea>
+          <label class="file-button">+ 添加图片<input id="assistant-images" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple /></label>
+          <div class="file-list" id="assistant-file-list"></div>
+        </article>
+
+        <div class="actions">
+          <button class="persist wide-button" id="ingest-button">自动抽取并持久化 <span>⌘↵</span></button>
+        </div>
+        <section class="lifecycle-box">
+          <div><strong>Agent 两阶段接口</strong><small>先保存 User 并召回记忆，再提交可选 Assistant 完成抽取。</small></div>
+          <div class="actions">
+            <button class="primary" id="before-generation-button">1 · before_generation</button>
+            <button class="secondary" id="after-generation-button" disabled>2 · after_generation</button>
+          </div>
+          <pre class="code lifecycle-output" id="lifecycle-output">尚未调用</pre>
+        </section>
+      </section>
+
+      <section class="panel result-panel">
+        <div class="panel-heading result-heading">
+          <span class="step">02</span>
+          <div><h2>检查模型反馈</h2><p id="run-meta">尚未运行</p></div>
+        </div>
+
+        <nav class="tabs" aria-label="结果视图">
+          <button class="tab active" data-tab="omega">Ω 候选</button>
+          <button class="tab" data-tab="prompt">Prompt</button>
+          <button class="tab" data-tab="request">API Request</button>
+          <button class="tab" data-tab="raw">Raw Response</button>
+          <button class="tab" data-tab="retrieval">Top-20</button>
+          <button class="tab" data-tab="judgment">裁决</button>
+          <button class="tab" data-tab="persistence">持久化</button>
+        </nav>
+
+        <div class="tab-content active" id="tab-omega">
+          <div class="empty-state" id="empty-state">
+            <div class="orb">Ω</div>
+            <h3>等待一次抽取</h3>
+            <p>结果将逐条展示 x、meta 与来源消息。</p>
+          </div>
+          <div id="candidate-list"></div>
+        </div>
+        <pre class="tab-content code" id="tab-prompt"></pre>
+        <pre class="tab-content code" id="tab-request"></pre>
+        <pre class="tab-content code" id="tab-raw"></pre>
+        <pre class="tab-content code" id="tab-retrieval"></pre>
+        <pre class="tab-content code" id="tab-judgment"></pre>
+        <pre class="tab-content code" id="tab-persistence"></pre>
+      </section>
+    </main>
+
+    <main class="tool-workspace hidden" id="workspace-search">
+      <section class="panel tool-controls">
+        <div class="panel-heading">
+          <span class="step">Q</span>
+          <div><h2>多模态记忆查询</h2><p>文字、图片或混合输入，默认返回 Top-20。</p></div>
+        </div>
+        <label>查询文字<textarea id="search-text" rows="6" placeholder="例如：找出用户在杭州参加过的活动"></textarea></label>
+        <label class="file-button">+ 添加查询图片<input id="search-images" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple /></label>
+        <div class="file-list" id="search-file-list"></div>
+        <label>返回数量<input id="search-top-k" type="number" min="1" max="100" value="20" /></label>
+        <button class="primary wide-button" id="search-button">执行查询</button>
+      </section>
+      <section class="panel tool-results">
+        <div class="panel-heading result-heading">
+          <span class="step">R</span>
+          <div><h2>命中记忆</h2><p id="search-meta">尚未查询</p></div>
+        </div>
+        <div class="empty-state compact" id="search-empty">
+          <div class="orb">Q</div><h3>等待查询</h3><p>结果会展示完整记忆、分数和匹配路径。</p>
+        </div>
+        <div id="search-results"></div>
+      </section>
+    </main>
+
+    <main class="tool-workspace hidden" id="workspace-library">
+      <section class="panel tool-controls">
+        <div class="panel-heading">
+          <span class="step">DB</span>
+          <div><h2>记忆库筛选</h2><p>只读查看 Qdrant 中的逻辑 MemoryItem。</p></div>
+        </div>
+        <label>Memory ID<input id="library-memory-id" placeholder="完整 UUID（可空）" /></label>
+        <label>Session ID<input id="library-session-id" placeholder="例如 debug-session" /></label>
+        <div class="grid two-even">
+          <label>Kind<input id="library-kind" placeholder="event / fact" /></label>
+          <label>Facet Type
+            <select id="library-facet-type">
+              <option value="">全部类型</option>
+              <option value="core">core</option>
+              <option value="dynamic">dynamic</option>
+            </select>
+          </label>
+        </div>
+        <label>每页数量<input id="library-page-size" type="number" min="1" max="100" value="20" /></label>
+        <button class="persist wide-button" id="library-refresh">刷新记忆库</button>
+      </section>
+      <section class="panel tool-results">
+        <div class="panel-heading result-heading">
+          <span class="step">M</span>
+          <div><h2>持久化记忆</h2><p id="library-meta">尚未加载</p></div>
+        </div>
+        <div class="library-toolbar">
+          <button class="secondary" id="library-prev">上一页</button>
+          <span id="library-page-label">第 1 页</span>
+          <button class="secondary" id="library-next">下一页</button>
+        </div>
+        <div class="empty-state compact" id="library-empty">
+          <div class="orb">M</div><h3>等待加载</h3><p>每个 memory_id 只显示一次。</p>
+        </div>
+        <div id="library-results"></div>
+      </section>
+    </main>
+
+    <main class="tool-workspace hidden" id="workspace-sources">
+      <section class="panel tool-controls">
+        <div class="panel-heading">
+          <span class="step">SRC</span>
+          <div><h2>原始消息筛选</h2><p>只读查看 SQLite 中的不可变 User/AI 消息及其关联记忆。</p></div>
+        </div>
+        <label>Session ID<input id="source-session-id" placeholder="留空查看全部 session" /></label>
+        <label>每页数量<input id="source-page-size" type="number" min="1" max="100" value="20" /></label>
+        <button class="persist wide-button" id="source-refresh">刷新原始消息</button>
+      </section>
+      <section class="panel tool-results">
+        <div class="panel-heading result-heading">
+          <span class="step">R</span>
+          <div><h2>原文与关联记忆</h2><p id="source-meta">尚未加载</p></div>
+        </div>
+        <div class="library-toolbar">
+          <button class="secondary" id="source-prev">上一页</button>
+          <span id="source-page-label">第 1 页</span>
+          <button class="secondary" id="source-next">下一页</button>
+        </div>
+        <div class="empty-state compact" id="source-empty">
+          <div class="orb">R</div><h3>等待加载</h3><p>每条原始消息会列出所有由它派生的持久化记忆。</p>
+        </div>
+        <div id="source-results"></div>
+      </section>
+    </main>
+
+    <main class="tool-workspace hidden" id="workspace-summary">
+      <section class="panel tool-controls">
+        <div class="panel-heading">
+          <span class="step">S</span>
+          <div><h2>Session 全局摘要</h2><p>每 5 次提交异步增量更新，严格按 session 隔离。</p></div>
+        </div>
+        <label>Session ID<input id="summary-session-id" value="debug-session" /></label>
+        <button class="persist wide-button" id="summary-refresh">读取摘要状态</button>
+        <button class="secondary wide-button" id="summary-retry">重试失败任务</button>
+        <small>重试只作用于该 session 最早的失败批次，不会修改原始消息。</small>
+      </section>
+      <section class="panel tool-results">
+        <div class="panel-heading result-heading">
+          <span class="step">Σ</span>
+          <div><h2>最新已完成摘要</h2><p id="summary-meta">尚未加载</p></div>
+        </div>
+        <div class="empty-state compact" id="summary-empty">
+          <div class="orb">S</div><h3>等待读取</h3><p>这里显示摘要版本、覆盖游标和后台任务状态。</p>
+        </div>
+        <article class="summary-card hidden" id="summary-card">
+          <p class="summary-text" id="summary-text"></p>
+          <pre class="code" id="summary-status-json"></pre>
+        </article>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="alert"></div>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
+
