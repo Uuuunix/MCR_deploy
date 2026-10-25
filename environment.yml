@@ -1,9 +1,9 @@
-name: mcr
+name: mcr-deploy
 channels:
   - conda-forge
 dependencies:
   - python=3.12
   - pip
   - pip:
-      - -e .[dev]
+      - -e .
 
